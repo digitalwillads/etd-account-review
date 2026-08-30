@@ -1,0 +1,278 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ETD PMax General Diagnosis</title>
+<style>
+:root{--ink:#0f172a;--muted:#64748b;--line:#e5e9f0;--bg:#f1f5f9;--card:#fff;--accent:#2563eb;--good:#16a34a;--warn:#d97706;--bad:#dc2626;--badbg:#fef2f2;--goodbg:#f0fdf4;}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg);overflow:hidden;-webkit-font-smoothing:antialiased;}
+.deck{height:100vh;width:100vw;position:relative;}
+.slide{position:absolute;inset:0;opacity:0;visibility:hidden;transition:opacity .25s ease;display:flex;flex-direction:column;justify-content:center;
+  padding:5vh 6vw;max-width:1560px;margin:0 auto;}
+.slide.active{opacity:1;visibility:visible;}
+h1{font-size:clamp(22px,2.6vw,36px);line-height:1.08;letter-spacing:-.02em;margin-bottom:20px;}
+h3{font-size:14px;margin-bottom:10px;color:var(--ink);font-weight:700;}
+.bignum{font-size:clamp(30px,4.2vw,52px);font-weight:800;letter-spacing:-.03em;line-height:1;margin:6px 0 18px;}
+.bignum span{display:block;font-size:13px;font-weight:500;color:var(--muted);letter-spacing:0;margin-top:8px;}
+.bignum.bad{color:var(--bad)} .bignum.warn{color:var(--warn)} .bignum.good{color:var(--good)}
+table{width:100%;border-collapse:collapse;font-size:clamp(12px,1vw,14px);}
+th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;padding:8px 10px;border-bottom:2px solid var(--line);}
+td{padding:7px 10px;border-bottom:1px solid var(--line);}
+.num{text-align:right;font-variant-numeric:tabular-nums;}
+.term{font-weight:600;} .camp{color:var(--muted);font-size:.92em;}
+.note{font-size:12.5px;color:var(--muted);margin-top:14px;line-height:1.45;max-width:96ch;}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:30px;align-items:center;}
+.cols.toptext{align-items:start;}
+.cols.wide{grid-template-columns:1.35fr 1fr;}
+span.ok{color:var(--good);font-weight:600;font-size:12px;}
+tr.okrow{background:var(--goodbg);}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.9em;background:#eef2f7;padding:1px 6px;border-radius:5px;color:#334155;}
+.panel{border-radius:14px;padding:16px 18px;}
+.panel.bad{background:var(--badbg);border:1px solid #fecaca;}
+.panel.act{background:#eff6ff;border:1px solid #bfdbfe;}
+.panel.good{background:var(--goodbg);border:1px solid #bbf7d0;}
+.steps{list-style:none;}
+.steps li{display:flex;gap:12px;align-items:flex-start;padding:8px 0;border-bottom:1px solid rgba(0,0,0,.06);font-size:13.5px;line-height:1.45;}
+.steps li:last-child{border:none}
+.stepn{flex:0 0 22px;width:22px;height:22px;line-height:22px;text-align:center;border-radius:6px;background:var(--accent);color:#fff;font-weight:700;font-size:12px;}
+.kpistrip{display:flex;gap:12px;margin:8px 0 20px;flex-wrap:wrap;}.kpistrip .stat{flex:1 1 0;min-width:0;}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 20px;min-width:118px;}
+.stat .v{font-size:26px;font-weight:750;letter-spacing:-.02em;line-height:1;}
+.stat .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-top:5px;}
+.v.bad{color:var(--bad)} .v.good{color:var(--good)} .v.warn{color:var(--warn)}
+.pnote{font-size:12.5px;color:#475569;margin-top:10px;line-height:1.4;}
+.verdict{font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.05em;padding:3px 9px;border-radius:20px;display:inline-block;}
+.verdict.yes{background:#fee2e2;color:#b91c1c;}
+.verdict.partly{background:#fef3c7;color:#b45309;}
+.verdict.no{background:#dcfce7;color:#15803d;}
+.bar{position:fixed;bottom:18px;left:0;right:0;display:flex;align-items:center;justify-content:center;gap:18px;z-index:20;}
+.bar button.arr{background:var(--card);border:1px solid var(--line);width:40px;height:40px;border-radius:50%;font-size:18px;cursor:pointer;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.06);}
+.bar button.arr:hover{border-color:var(--accent);color:var(--accent);}
+.dots{display:flex;gap:8px;}
+.dot{width:9px;height:9px;border-radius:50%;border:none;background:#cbd5e1;cursor:pointer;padding:0;}
+.dot.on{background:var(--accent);transform:scale(1.25);}
+.count{position:fixed;top:22px;right:30px;font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.05em;z-index:20;}
+.brand{position:fixed;top:22px;left:30px;font-size:12px;color:var(--muted);font-weight:700;letter-spacing:.08em;text-transform:uppercase;z-index:20;}
+@media(max-width:820px){.cols,.cols.wide{grid-template-columns:1fr;gap:20px}}
+.chaingrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:4px;}
+.ccard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;}
+.ccard .role{font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;}
+.ccard .big{font-size:26px;font-weight:750;letter-spacing:-.02em;line-height:1.05;}
+.ccard .cap{font-size:13px;font-weight:700;}
+.ccard .sub{font-size:12.5px;color:var(--muted);line-height:1.4;}
+.bars{display:flex;align-items:flex-end;gap:5px;height:190px;margin:6px 0 2px;}
+.chartbar{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:5px;height:100%;}
+.chartbar .col{width:100%;border-radius:5px 5px 0 0;background:#94a3b8;}
+.chartbar.cy .col{background:var(--bad);}
+.chartbar .bl{font-size:9.5px;color:var(--muted);white-space:nowrap;}
+.chartbar .bv{font-size:10.5px;font-weight:700;}
+</style></head>
+<body>
+<div class="brand">Extreme Tactical Dynamics &middot; Where the revenue went, and what to do</div>
+<div class="count"><span id="cur">1</span> / <span id="tot">9</span></div>
+<section class="slide">
+  <h1>The question, and how we are going to answer it</h1>
+  <div class="kpistrip">
+    <div class="stat"><div class="v bad">&minus;28%</div><div class="l">Account revenue, August year on year</div></div>
+    <div class="stat"><div class="v">$87,100</div><div class="l">August 2025</div></div>
+    <div class="stat"><div class="v">$63,103</div><div class="l">August 2026, 27 days</div></div>
+    <div class="stat"><div class="v">~$72,400</div><div class="l">August 2026 at a full 31 days</div></div>
+  </div>
+  <div class="cols" style="align-items:start;grid-template-columns:1fr 1fr">
+    <div class="panel bad"><b>What we are explaining</b><p class="pnote">Revenue across the whole Google Ads account, not one campaign. August came in at $63,103 over 27 days. Scaled to a full month that is about $72,400 against $87,100 last August, a fall of roughly 17%. Over the same window the ad account spent 30% less.</p></div>
+    <div class="panel act"><b>How the next six slides work</b><p class="pnote">Revenue from ads is only ever three things multiplied together: how many clicks you buy, how often they convert, and how much each order is worth. We take them one at a time. Two of the three got better. Only one got worse, and the rest of the deck is about why.</p></div>
+  </div>
+  <div class="panel act" style="margin-top:14px"><b>One note on the numbers</b><p class="pnote">Your buyers take weeks to convert, so recent months are still filling in. Every revenue and conversion figure here is projected to full maturity using your own account's lag curve, so this year and last year compare fairly.</p></div>
+</section>
+
+<section class="slide">
+  <h1>Step 1: it is not the conversion rate. That improved.</h1>
+  <div class="kpistrip">
+    <div class="stat"><div class="v good">1.44%</div><div class="l">August 2026</div></div>
+    <div class="stat"><div class="v">1.23%</div><div class="l">August 2025</div></div>
+    <div class="stat"><div class="v good">+17%</div><div class="l">Year on year</div></div>
+    <div class="stat"><div class="v good">11 of 12</div><div class="l">Months above the prior year since Sep</div></div>
+  </div>
+  <div class="bars"><div class="chartbar"><div class="bv">1.28</div><div class="col" style="height:66.3%"></div><div class="bl">01 &rsquo;25</div></div><div class="chartbar"><div class="bv">1.32</div><div class="col" style="height:68.5%"></div><div class="bl">02</div></div><div class="chartbar"><div class="bv">1.46</div><div class="col" style="height:75.5%"></div><div class="bl">03</div></div><div class="chartbar"><div class="bv">1.37</div><div class="col" style="height:70.7%"></div><div class="bl">04</div></div><div class="chartbar"><div class="bv">1.25</div><div class="col" style="height:64.9%"></div><div class="bl">05</div></div><div class="chartbar"><div class="bv">1.46</div><div class="col" style="height:75.5%"></div><div class="bl">06</div></div><div class="chartbar"><div class="bv">1.37</div><div class="col" style="height:70.9%"></div><div class="bl">07</div></div><div class="chartbar"><div class="bv">1.23</div><div class="col" style="height:63.8%"></div><div class="bl">08</div></div><div class="chartbar"><div class="bv">1.25</div><div class="col" style="height:64.6%"></div><div class="bl">09</div></div><div class="chartbar"><div class="bv">1.26</div><div class="col" style="height:65.1%"></div><div class="bl">10</div></div><div class="chartbar"><div class="bv">1.32</div><div class="col" style="height:68.3%"></div><div class="bl">11</div></div><div class="chartbar"><div class="bv">1.48</div><div class="col" style="height:76.4%"></div><div class="bl">12</div></div><div class="chartbar cy"><div class="bv">1.19</div><div class="col" style="height:61.3%"></div><div class="bl">01 &rsquo;26</div></div><div class="chartbar cy"><div class="bv">1.31</div><div class="col" style="height:68.0%"></div><div class="bl">02</div></div><div class="chartbar cy"><div class="bv">1.33</div><div class="col" style="height:68.6%"></div><div class="bl">03</div></div><div class="chartbar cy"><div class="bv">1.54</div><div class="col" style="height:79.8%"></div><div class="bl">04</div></div><div class="chartbar cy"><div class="bv">1.58</div><div class="col" style="height:81.5%"></div><div class="bl">05</div></div><div class="chartbar cy"><div class="bv">1.93</div><div class="col" style="height:100.0%"></div><div class="bl">06</div></div><div class="chartbar cy"><div class="bv">1.46</div><div class="col" style="height:75.3%"></div><div class="bl">07</div></div><div class="chartbar cy"><div class="bv">1.44</div><div class="col" style="height:74.4%"></div><div class="bl">08</div></div></div>
+  <div class="cols" style="margin-top:10px;align-items:start;grid-template-columns:1fr 1fr">
+    <div class="panel act"><b>What this rules out</b><p class="pnote">If the website, the checkout, the tracking or the traffic quality had gone wrong, this line would be falling. It is rising, and it has been rising all year. June hit 1.93%, the best month in the two years we can see.</p></div>
+    <div class="panel act"><b>Read it as good news</b><p class="pnote">Every hundred visitors you buy today produce more orders than they did a year ago. Nothing about the shop is broken.</p></div>
+  </div>
+</section>
+
+<section class="slide">
+  <h1>Step 2: it is not what each visit is worth. That improved too.</h1>
+  <div class="kpistrip">
+    <div class="stat"><div class="v good">$3.50</div><div class="l">Revenue per click, Aug 2026</div></div>
+    <div class="stat"><div class="v">$3.20</div><div class="l">Aug 2025</div></div>
+    <div class="stat"><div class="v good">+9%</div><div class="l">Year on year</div></div>
+    <div class="stat"><div class="v">$244</div><div class="l">Average order, was $259</div></div>
+  </div>
+  <div class="bars"><div class="chartbar"><div class="bv">2.99</div><div class="col" style="height:68.0%"></div><div class="bl">01 &rsquo;25</div></div><div class="chartbar"><div class="bv">3.04</div><div class="col" style="height:69.3%"></div><div class="bl">02</div></div><div class="chartbar"><div class="bv">3.52</div><div class="col" style="height:80.2%"></div><div class="bl">03</div></div><div class="chartbar"><div class="bv">3.19</div><div class="col" style="height:72.6%"></div><div class="bl">04</div></div><div class="chartbar"><div class="bv">2.69</div><div class="col" style="height:61.3%"></div><div class="bl">05</div></div><div class="chartbar"><div class="bv">4.03</div><div class="col" style="height:91.6%"></div><div class="bl">06</div></div><div class="chartbar"><div class="bv">3.21</div><div class="col" style="height:73.1%"></div><div class="bl">07</div></div><div class="chartbar"><div class="bv">3.20</div><div class="col" style="height:72.8%"></div><div class="bl">08</div></div><div class="chartbar"><div class="bv">3.17</div><div class="col" style="height:72.2%"></div><div class="bl">09</div></div><div class="chartbar"><div class="bv">3.17</div><div class="col" style="height:72.1%"></div><div class="bl">10</div></div><div class="chartbar"><div class="bv">3.43</div><div class="col" style="height:78.0%"></div><div class="bl">11</div></div><div class="chartbar"><div class="bv">3.60</div><div class="col" style="height:81.9%"></div><div class="bl">12</div></div><div class="chartbar cy"><div class="bv">2.98</div><div class="col" style="height:67.9%"></div><div class="bl">01 &rsquo;26</div></div><div class="chartbar cy"><div class="bv">3.96</div><div class="col" style="height:90.1%"></div><div class="bl">02</div></div><div class="chartbar cy"><div class="bv">2.79</div><div class="col" style="height:63.4%"></div><div class="bl">03</div></div><div class="chartbar cy"><div class="bv">4.39</div><div class="col" style="height:100.0%"></div><div class="bl">04</div></div><div class="chartbar cy"><div class="bv">4.03</div><div class="col" style="height:91.7%"></div><div class="bl">05</div></div><div class="chartbar cy"><div class="bv">4.34</div><div class="col" style="height:98.9%"></div><div class="bl">06</div></div><div class="chartbar cy"><div class="bv">3.53</div><div class="col" style="height:80.4%"></div><div class="bl">07</div></div><div class="chartbar cy"><div class="bv">3.50</div><div class="col" style="height:79.8%"></div><div class="bl">08</div></div></div>
+  <div class="cols" style="margin-top:10px;align-items:start;grid-template-columns:1fr 1fr">
+    <div class="panel act"><b>The number that matters most</b><p class="pnote">Revenue per click is conversion rate multiplied by order value. It is what one visitor is worth to you, and it is the number Google's bidding divides by your target to decide what it will pay. At $3.50 it is 9% better than a year ago.</p></div>
+    <div class="panel warn" style="background:#fffbeb;border:1px solid #fde68a"><b>The one soft spot</b><p class="pnote">Average order value slipped from $259 to $244. The better conversion rate more than covered it, but order value is the lever we come back to at the end, because it is the one you control directly.</p></div>
+  </div>
+</section>
+
+<section class="slide">
+  <h1>Step 3: so it has to be volume. It is. Clicks fell a third.</h1>
+  <div class="kpistrip">
+    <div class="stat"><div class="v bad">18,006</div><div class="l">Clicks, Aug 2026</div></div>
+    <div class="stat"><div class="v">27,244</div><div class="l">Aug 2025</div></div>
+    <div class="stat"><div class="v bad">&minus;34%</div><div class="l">Year on year</div></div>
+    <div class="stat"><div class="v bad">&minus;46%</div><div class="l">Impressions</div></div>
+  </div>
+  <div class="bars"><div class="chartbar"><div class="bv">30k</div><div class="col" style="height:100.0%"></div><div class="bl">01 &rsquo;25</div></div><div class="chartbar"><div class="bv">24k</div><div class="col" style="height:78.8%"></div><div class="bl">02</div></div><div class="chartbar"><div class="bv">26k</div><div class="col" style="height:87.4%"></div><div class="bl">03</div></div><div class="chartbar"><div class="bv">26k</div><div class="col" style="height:88.4%"></div><div class="bl">04</div></div><div class="chartbar"><div class="bv">22k</div><div class="col" style="height:74.7%"></div><div class="bl">05</div></div><div class="chartbar"><div class="bv">19k</div><div class="col" style="height:62.5%"></div><div class="bl">06</div></div><div class="chartbar"><div class="bv">23k</div><div class="col" style="height:76.1%"></div><div class="bl">07</div></div><div class="chartbar"><div class="bv">27k</div><div class="col" style="height:90.9%"></div><div class="bl">08</div></div><div class="chartbar"><div class="bv">22k</div><div class="col" style="height:72.7%"></div><div class="bl">09</div></div><div class="chartbar"><div class="bv">21k</div><div class="col" style="height:71.6%"></div><div class="bl">10</div></div><div class="chartbar"><div class="bv">25k</div><div class="col" style="height:83.6%"></div><div class="bl">11</div></div><div class="chartbar"><div class="bv">27k</div><div class="col" style="height:90.9%"></div><div class="bl">12</div></div><div class="chartbar cy"><div class="bv">25k</div><div class="col" style="height:85.0%"></div><div class="bl">01 &rsquo;26</div></div><div class="chartbar cy"><div class="bv">24k</div><div class="col" style="height:81.7%"></div><div class="bl">02</div></div><div class="chartbar cy"><div class="bv">22k</div><div class="col" style="height:72.1%"></div><div class="bl">03</div></div><div class="chartbar cy"><div class="bv">22k</div><div class="col" style="height:75.1%"></div><div class="bl">04</div></div><div class="chartbar cy"><div class="bv">21k</div><div class="col" style="height:70.5%"></div><div class="bl">05</div></div><div class="chartbar cy"><div class="bv">17k</div><div class="col" style="height:56.0%"></div><div class="bl">06</div></div><div class="chartbar cy"><div class="bv">19k</div><div class="col" style="height:64.2%"></div><div class="bl">07</div></div><div class="chartbar cy"><div class="bv">18k</div><div class="col" style="height:60.1%"></div><div class="bl">08</div></div></div>
+  <div class="cols" style="margin-top:10px;align-items:start;grid-template-columns:1fr 1fr">
+    <div class="panel bad"><b>This is the entire problem</b><p class="pnote">Two of the three ingredients improved, so the whole shortfall sits here. You are buying a third fewer visitors than a year ago, and each one is worth more than it used to be.</p></div>
+    <div class="panel act"><b>Not a budget problem</b><p class="pnote">The account has $3,887 a day of budget available across its live campaigns. In August it spent $984 a day, 25% of it. Nothing was capped. It chose not to buy.</p></div>
+  </div>
+</section>
+
+<section class="slide">
+  <h1>Step 4: why it stopped buying. Clicks got more expensive everywhere.</h1>
+  <div class="kpistrip">
+    <div class="stat"><div class="v bad">$1.48</div><div class="l">Cost per click, Aug 2026</div></div>
+    <div class="stat"><div class="v">$1.40</div><div class="l">Aug 2025</div></div>
+    <div class="stat"><div class="v bad">$1.60</div><div class="l">July, the highest in two years</div></div>
+    <div class="stat"><div class="v bad">+16%</div><div class="l">Account average, year on year</div></div>
+  </div>
+  <table><thead><tr><th>Campaign</th><th class="num">Cost per click, Aug 2025</th><th class="num">Aug 2026</th><th class="num">Change</th></tr></thead>
+  <tbody>
+    <tr><td class="term">KB Search, Emergency Lights</td><td class="num">$1.23</td><td class="num">$1.76</td><td class="num" style="color:var(--bad);font-weight:700">+44%</td></tr>
+    <tr><td class="term">Search, By Industry Silo</td><td class="num">$1.28</td><td class="num">$1.61</td><td class="num" style="color:var(--bad);font-weight:700">+27%</td></tr>
+    <tr><td class="term">PMax Feed Only</td><td class="num">$1.13</td><td class="num">$1.42</td><td class="num" style="color:var(--bad);font-weight:700">+26%</td></tr>
+    <tr><td class="term">PMax General</td><td class="num">$1.19</td><td class="num">$1.41</td><td class="num" style="color:var(--bad);font-weight:700">+18%</td></tr>
+    <tr><td class="term">Search, First Responder Lights</td><td class="num">$1.05</td><td class="num">$1.16</td><td class="num" style="color:var(--warn);font-weight:700">+11%</td></tr>
+  </tbody></table>
+  <div class="cols" style="margin-top:12px;align-items:start;grid-template-columns:1fr 1fr">
+    <div class="panel bad"><b>Every campaign, every type</b><p class="pnote">Search campaigns and Performance Max campaigns, different targeting, different products, all up between 11% and 44%. When it moves everywhere at once it is the auction, not the account. Somebody is bidding more for your customers than they were a year ago.</p></div>
+    <div class="panel act"><b>This is the thing outside your control</b><p class="pnote">You cannot make clicks cheaper. Everything we suggest later is about what to do given that they are dearer, not about undoing it.</p></div>
+  </div>
+</section>
+
+<section class="slide">
+  <h1>Step 5: a target return turns dearer clicks into fewer clicks</h1>
+  <div class="kpistrip">
+    <div class="stat"><div class="v">$3.50</div><div class="l">What a visitor is worth</div></div>
+    <div class="stat"><div class="v">&divide; 2.35</div><div class="l">The return you asked for</div></div>
+    <div class="stat"><div class="v bad">$1.49</div><div class="l">So this is the most it will bid</div></div>
+    <div class="stat"><div class="v warn">$1.48 &rarr; $1.76</div><div class="l">What clicks now cost</div></div>
+  </div>
+  <table><thead><tr><th>PMax General, search network only</th><th class="num">Aug 2025</th><th class="num">Aug 2026</th><th class="num">Change</th></tr></thead>
+  <tbody>
+    <tr><td class="term">What a visitor was worth</td><td class="num">$2.74</td><td class="num">$2.74</td><td class="num" style="font-weight:700">flat</td></tr>
+    <tr><td class="term">What a click cost</td><td class="num">$1.22</td><td class="num">$1.57</td><td class="num" style="color:var(--bad);font-weight:700">+29%</td></tr>
+    <tr class="okrow"><td class="term">So the return it achieved</td><td class="num">2.25</td><td class="num">1.75</td><td class="num" style="color:var(--bad);font-weight:700">below its 2.35 target</td></tr>
+  </tbody></table>
+  <div class="cols" style="margin-top:12px;align-items:start;grid-template-columns:1fr 1fr;max-width:1180px;margin-left:auto;margin-right:auto">
+    <div class="panel act"><b>How the bidding works</b><p class="pnote">You tell Google to return 2.35 for every dollar. The most it will pay for a click is that visitor's worth divided by 2.35. If clicks get dearer and the visitor is worth the same, it cannot pay the going rate, so it simply stops entering those auctions.</p></div>
+    <div class="panel bad"><b>What happened here</b><p class="pnote">The value of a visitor to this campaign held flat at $2.74 while the price of reaching one rose 29%. Its return fell from 2.25 to 1.75, under the target it was given. So it bought less, month after month, for the better part of a year.</p></div>
+    
+  </div>
+</section>
+
+<section class="slide">
+  <h1>Step 6: the proof. One setting changed, and it started buying again.</h1>
+  <div class="kpistrip">
+    <div class="stat"><div class="v">2.35 &rarr; 2.00</div><div class="l">Target, changed Aug 10</div></div>
+    <div class="stat"><div class="v good">$253 &rarr; $623</div><div class="l">Spend a day</div></div>
+    <div class="stat"><div class="v good">208 &rarr; 429</div><div class="l">Clicks a day</div></div>
+    <div class="stat"><div class="v warn">2.36 &rarr; 1.85</div><div class="l">Return</div></div>
+  </div>
+  <table><thead><tr><th>PMax General, August 2026</th><th class="num">Target</th><th class="num">Spend a day</th><th class="num">Share of its budget</th><th class="num">Clicks a day</th><th class="num">Return</th></tr></thead>
+  <tbody>
+    <tr><td class="term">1st to 9th, before the change</td><td class="num">2.35</td><td class="num">$253</td><td class="num" style="color:var(--bad);font-weight:700">23%</td><td class="num">208</td><td class="num" style="font-weight:700">2.36</td></tr>
+    <tr class="okrow"><td class="term">10th to 27th, after</td><td class="num">2.00</td><td class="num">$623</td><td class="num" style="color:var(--good);font-weight:700">57%</td><td class="num">429</td><td class="num" style="font-weight:700">1.85</td></tr>
+  </tbody></table>
+  <div class="cols" style="margin-top:12px;align-items:start;grid-template-columns:1fr 1fr 1fr">
+    <div class="panel bad"><b>Before</b><p class="pnote">Asked for 2.35, it delivered 2.36. It was obeying you precisely. At that standard only $253 a day of inventory was worth buying, 23% of its budget, with nothing lost to the budget cap.</p></div>
+    <div class="panel act"><b>After</b><p class="pnote">Spend and clicks both doubled within days. Nothing else changed, and nothing changed in the market on August 10. This is the cleanest evidence in the deck that the target was the constraint.</p></div>
+    <div class="panel act"><b>The trade</b><p class="pnote">The return fell from 2.36 to 1.85. That is the deal on offer: more volume at a lower return. Where to sit on that line is a business decision and it belongs to you, not to us.</p></div>
+  </div>
+</section>
+
+<section class="slide">
+  <h1>One thing worth testing, and one thing that is set up correctly</h1>
+  <div class="kpistrip">
+    <div class="stat"><div class="v good">79%</div><div class="l">Of your product pages the main campaign covers</div></div>
+    <div class="stat"><div class="v">301</div><div class="l">Distinct product pages in the feed</div></div>
+    <div class="stat"><div class="v">62</div><div class="l">Pages it does not cover</div></div>
+    <div class="stat"><div class="v">$98</div><div class="l">Spend on those, in three months</div></div>
+  </div>
+  <div class="cols" style="align-items:start;grid-template-columns:1fr 1fr">
+    <div class="panel act"><b>The feed split is deliberate, and right</b><p class="pnote">Your feed carries each product twice: once as a single parent listing and again as its individual colour variants. The main campaign runs the parent listings, which is how it should be. It stops six colours of the same light bar bidding against each other in one campaign. The 62 pages it does not cover are accessories and off-road lights, cable ties, brackets, work lights. They took $98 of spend across three months, a fifth of one percent. Nothing to fix here.</p></div>
+    <div class="panel act"><b>The question worth asking</b><p class="pnote">The campaign running variant listings returned 2.47 over the same period against 1.81 for the one running parent listings, on broadly the same goods. That is suggestive, not proof: they are different campaigns with different budgets and histories. It is worth a controlled test on one product range, because if variant listings really do match colour-specific searches better, that is revenue with no extra spend.</p></div>
+  </div>
+</section>
+
+<section class="slide">
+  <h1>So what can actually be done</h1>
+  <table><thead><tr><th>Option</th><th style="width:88px">Verdict</th><th>What the numbers say</th></tr></thead>
+  <tbody>
+    <tr><td class="term">Raise prices</td><td><span class="verdict yes">Strongest</span></td><td>A 10% rise lifts revenue per click from $3.50 to $3.85, which lifts what the same target will bid from $1.48 to $1.62. That is roughly the whole cost increase, recovered. It is the only lever that fixes the cause rather than trading volume for efficiency. Test one range first: if a 10% rise costs more than 10% of conversion rate, it is a net loss.</td></tr>
+    
+    
+    <tr><td class="term">Lower the target further</td><td><span class="verdict partly">A trade, not a fix</span></td><td>It buys volume at a worse return, exactly as it did on August 10 when 2.35 to 2.00 doubled spend and took the return from 2.36 to 1.85. Legitimate if you want the revenue, but it does not make anything more profitable.</td></tr>
+    <tr><td class="term">Lower the budget</td><td><span class="verdict no">Does nothing</span></td><td>The account has $3,887 a day available and spent $984, a quarter of it. No campaign is capped. Cutting a budget nothing is reaching changes nothing at all.</td></tr>
+    <tr><td class="term">Hope the conversion rate keeps rising</td><td><span class="verdict no">Not a plan</span></td><td>It has risen 17% year on year and it did carry you through this. But it has to keep beating a 16% rise in click prices every year, and nobody controls it. Worth watching, not worth relying on.</td></tr>
+  </tbody></table>
+</section>
+
+<section class="slide">
+  <h1>What we suggest, in order</h1>
+  <div class="cols" style="align-items:start">
+    <div>
+      <div class="panel bad"><b>This week</b>
+      <ol class="steps">
+        
+        <li><span class="stepn">1</span><span>Put an end date on the 15% sitewide code inside the ads account. It has none today and LABOR20 starts Monday.</span></li>
+        <li><span class="stepn">2</span><span>Hold the target at 2.00. Do not put it back to 2.35.</span></li>
+      </ol></div>
+    </div>
+    <div>
+      <div class="panel act"><b>Next week</b>
+      <ol class="steps">
+        
+        <li><span class="stepn">3</span><span>Pick one product range and test a 10% price rise. We will watch conversion rate and order value together and tell you within three weeks whether it paid.</span></li>
+        
+      </ol></div>
+      <div class="panel act"><b>What we are not proposing</b><p class="pnote">No budget cuts, no feed rebuild, no asset overhaul, no new campaigns. None of those is why revenue fell and all three check out clean.</p></div>
+    </div>
+  </div>
+  <div class="panel bad" style="margin-top:14px"><b>Nothing changes until you say so.</b><p class="pnote">Approve the first two and we will make them this week, then report back in two weeks with the matured figures next to the raw ones.</p></div>
+</section>
+</div>
+
+<div class="bar">
+  <button class="arr" id="prev" aria-label="Previous slide">&#8249;</button>
+  <div class="dots"></div>
+  <button class="arr" id="next" aria-label="Next slide">&#8250;</button>
+</div>
+
+<script>
+const slides=[...document.querySelectorAll('.slide')];
+const dotwrap=document.querySelector('.dots'); dotwrap.innerHTML='';
+slides.forEach((_,k)=>{const b=document.createElement('button');
+  b.className='dot'+(k===0?' on':''); b.dataset.i=k; b.setAttribute('aria-label','Slide '+(k+1));
+  dotwrap.appendChild(b);});
+const dots=[...document.querySelectorAll('.dot')];
+let i=0;
+function show(n){i=Math.max(0,Math.min(slides.length-1,n));
+  slides.forEach((s,k)=>s.classList.toggle('active',k===i));
+  dots.forEach((d,k)=>d.classList.toggle('on',k===i));
+  document.getElementById('cur').textContent=i+1;document.getElementById("tot").textContent=slides.length;
+  location.hash=i+1;}
+document.getElementById('next').onclick=()=>show(i+1);
+document.getElementById('prev').onclick=()=>show(i-1);
+dots.forEach(d=>d.onclick=()=>show(+d.dataset.i));
+window.addEventListener('hashchange',()=>{const n=(parseInt(location.hash.slice(1))||1)-1; if(n!==i)show(n);});
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown'){show(i+1);e.preventDefault();}
+  if(e.key==='ArrowLeft'||e.key==='PageUp'){show(i-1);e.preventDefault();}
+  if(e.key==='Home')show(0); if(e.key==='End')show(slides.length-1);
+});
+show((parseInt(location.hash.slice(1))||1)-1);
+</script>
+</body></html>
